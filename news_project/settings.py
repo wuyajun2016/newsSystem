@@ -37,10 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'news_article',
-    'rest_framework',
-    'rest_framework_swagger',
-    'DjangoUeditor',
+    'news_article',  # app应用
+    'rest_framework',  # drf框架
+    'rest_framework_swagger',  # swagger框架
+    'DjangoUeditor',  # 引入了编辑框的包文件，这里也要增加下
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -79,7 +80,7 @@ WSGI_APPLICATION = 'news_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.mysql',  # 数据库改成mysql
         'NAME': 'blognews',
         'USER': 'root',
         'PASSWORD': '',
@@ -127,6 +128,10 @@ USE_TZ = False     # 使用mysql的话，需要把这个改成FALSE，不然根�
 
 STATIC_URL = '/static/'
 
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace('\\', '/')   # django上传图片，需要加上
+
+
 # swagger 配置项
 SWAGGER_SETTINGS = {
     # 基础样式
@@ -135,7 +140,7 @@ SWAGGER_SETTINGS = {
             'type': 'basic'
         }
     },
-    # 如果需要登录才能够查看接口文档, 登录的链接使用restframework自带的(需要写上权限控制的路由url，因为这里需要调用这个)
+    # 如果需要登录才能够查看接口文档, 登录的链接使用restframework自带的(需要在urls.py中加上r'^api-auth/'的url)
     'LOGIN_URL': 'rest_framework:login',
     'LOGOUT_URL': 'rest_framework:logout',
     # 'DOC_EXPANSION': None,
@@ -150,3 +155,43 @@ SWAGGER_SETTINGS = {
     'OPERATIONS_SORTER': 'alpha',
     'VALIDATOR_URL': None,
 }
+
+# token rest framework 配置实现
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        # 这句话能够使认证生效，否则直接请求就回返回结果
+        # 'rest_framework.permissions.IsAuthenticated', #必须有
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',#系统已有的
+        # 'article.auth.MyTokenAuthentication',#自定义的带过期的认证
+        # 下面是我新加的
+        # 这里是支持缓存，用户名密码，token 三个认证
+        # 'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication',
+        # # 使用token是必须要有下面这句话
+        # 'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+    )
+}
+
+# AUTH_PASSWORD_VALIDATORS = [
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+#     },
+# ]

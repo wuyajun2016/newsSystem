@@ -18,9 +18,10 @@ from django.urls import path, re_path
 from django.conf.urls import include, url
 from rest_framework_swagger.views import get_swagger_view
 
-schema_view = get_swagger_view(title="drf learn api")
+schema_view = get_swagger_view(title="news api")
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # re_path('^docs/$', schema_view),  # swagger路由:ip/docs
-    # url(r'', include('news_article.urls')),  # 让diango能够找到应用的url
+    re_path('^docs/$', schema_view),  # swagger路由:ip/docs
+    url(r'', include('news_article.urls')),  # 让diango能够找到应用的url
+    url(r'^api-auth/', include('rest_framework.urls')),  # api权限认证，增加登录的功能
 ]

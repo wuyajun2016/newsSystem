@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 
 class Category(models.Model):
     # verbose_name指定在admin管理界面中显示中文
-    # help_text表示会在form表单控件中显示help文本
+    # help_text表示会在form表单控件中显示help文本,或则用于admin模式下帮助文档
     title = models.CharField(max_length=20, verbose_name='名称', help_text="大类")
 
     def __str__(self):
@@ -18,7 +18,7 @@ class Category(models.Model):
     class Meta:
         ordering = ['title']
         verbose_name = '新闻类别'  # verbose_name的意思很简单，就是给你的模型类起一个更可读的名字一般定义为中文
-        verbose_name_plural = verbose_name  # 不指定Django会自动在模型名称后加一个’s’
+        verbose_name_plural = verbose_name  # 不指定Django会自动在模型名称后加一个’s’.主要就用于admin后台展示
 
 
 class Item(models.Model):
@@ -51,7 +51,7 @@ class Tag(models.Model):
 
 class Article(models.Model):
     title = models.CharField(max_length=100, verbose_name='标题', help_text="名称")
-    # SlugField代表一个描述性字段，另外unique_for_year表示值不能和publish_date该字段一样
+    # SlugField代表一个描述性字段,通常用来存url，另外unique_for_year表示值不能和publish_date该字段一样.被暗指 maxlength=50 db_index=True
     slug = models.SlugField(unique_for_year='publish_date', verbose_name='描述')
     # author = models.CharField(max_length=100, verbose_name='作者', help_text="作者")
     author = models.ForeignKey(User, related_name='author', on_delete=models.CASCADE, verbose_name='作者', help_text="作者")
