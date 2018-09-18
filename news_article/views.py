@@ -9,6 +9,11 @@ from rest_framework import permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.status import HTTP_201_CREATED, HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from .mypage import ArticlePagination
+from .myfilter import ArticleFilter
+from .permissions import IsOwnerOrReadOnly
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -19,7 +24,18 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
+    # 排序(这里ordering_fields指定可通过那些字段对结果进行排序)---跟model中的ordering区别？
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('-id',)  # 如果是降序前面加个‘-’
+    # 搜索(可根据search_fields里面的配置字段进行查询)
+    # filter_backends = (filters.SearchFilter,)
+    # search_fields = ('title', 'categorys__title',)
+    # 过滤（可根据title、外键title分别进行查询，精确查询）
+    # filter_backends = (DjangoFilterBackend,)
+    # filter_fields = ('title', 'categorys__title')
+
     serializer_class = ItemSerializer
+    # get等方法时候使用id去查询（默认就id，所以下面这句可以不写）
     lookup_field = "id"
 
 
@@ -59,7 +75,22 @@ class TagViewSet(viewsets.ModelViewSet):
 class ArticleViewSet(viewsets.ModelViewSet):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
+    pagination_class = ArticlePagination
+    # 自定义查询 ArticleFilter
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    filter_class = ArticleFilter
+    search_fields = ('title', 'item__title', 'tags__name')
+    ordering_fields = ('id', 'publish_date')
+
     lookup_field = "id"
+
+    # 重写下，浏览数+1
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()  # 获取article这个对象
+        instance.read_num += 1  # 将article中的read_num字段值加1
+        instance.save()
+        serializer = self.get_serializer(instance)  # 找到article的序列化类进行序列化
+        return Response(serializer.data)
 
 
 # 用户注册、查询
@@ -74,8 +105,9 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserRegisterSerializer
 
         return UserDetailSerializer
-    # 认证策略属性
-    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    # 认证策略属性(貌似没啥用，有待考究...???)
+    # authentication_classes = (TokenAuthentication, SessionAuthentication)
+    # permission_classes = (permissions.IsAuthenticated, IsOwnerOrReadOnly)
 
     def get_queryset(self):
         users = User.objects.filter(id=self.request.user.id)
@@ -89,8 +121,6 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             queryset = users
         return queryset
-
-    permission_classes = (permissions.IsAuthenticated,)
 
     def get_permissions(self):
         if self.action == "retrieve":
@@ -136,10 +166,11 @@ class UserLoginViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             token = Token.objects.get(user=user)
             # 重构返回数据
             serializer = UserLoginSerializer(
-                {'username': user.username, 'id': user.id, 'password': '', 'token': token.key})
+                {'username': user.username, 'id': user.id, 'token': token.key})
             return Response(serializer.data, status=HTTP_200_OK)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
+    # 这个目前没有，这里只是post，没有用到查询
     def get_object(self):
         return self.request.user
 
@@ -150,7 +181,7 @@ class AdViewSet(viewsets.ModelViewSet):
 
 
 # 用户修改密码
-class UserSetPasswordViewSet(mixins.CreateModelMixin,viewsets.GenericViewSet):
+class UserSetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSetPasswordSerializer
 

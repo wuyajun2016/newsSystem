@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
 import os
+import datetime
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,7 +42,9 @@ INSTALLED_APPS = [
     'rest_framework',  # drf框架
     'rest_framework_swagger',  # swagger框架
     'DjangoUeditor',  # 引入了编辑框的包文件，这里也要增加下
-    'rest_framework.authtoken',
+    'rest_framework.authtoken',  # 设置token
+    'django_filters',  # 设置自定义的过滤器
+    'corsheaders',  # 跨域
 ]
 
 MIDDLEWARE = [
@@ -52,6 +55,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # 跨域1
+    'django.middleware.common.CommonMiddleware',  # 跨域2-注意顺序
 ]
 
 ROOT_URLCONF = 'news_project.urls'
@@ -131,47 +136,23 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace('\\', '/')   # django上传图片，需要加上
 
-
-# swagger 配置项
-SWAGGER_SETTINGS = {
-    # 基础样式
-    'SECURITY_DEFINITIONS': {
-        "basic": {
-            'type': 'basic'
-        }
-    },
-    # 如果需要登录才能够查看接口文档, 登录的链接使用restframework自带的(需要在urls.py中加上r'^api-auth/'的url)
-    'LOGIN_URL': 'rest_framework:login',
-    'LOGOUT_URL': 'rest_framework:logout',
-    # 'DOC_EXPANSION': None,
-    # 'SHOW_REQUEST_HEADERS':True,
-    # 'USE_SESSION_AUTH': True,
-    # 'DOC_EXPANSION': 'list',
-    # 接口文档中方法列表以首字母升序排列
-    'APIS_SORTER': 'alpha',
-    # 如果支持json提交, 则接口文档中包含json输入框
-    'JSON_EDITOR': True,
-    # 方法列表字母排序
-    'OPERATIONS_SORTER': 'alpha',
-    'VALIDATOR_URL': None,
+# token失效时间
+JWT_AUTH = {
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=300),
 }
 
 # token rest framework 配置实现
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         # 这句话能够使认证生效，否则直接请求就回返回结果
-        # 'rest_framework.permissions.IsAuthenticated', #必须有
+        'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.authentication.TokenAuthentication',#系统已有的
-        # 'article.auth.MyTokenAuthentication',#自定义的带过期的认证
-        # 下面是我新加的
-        # 这里是支持缓存，用户名密码，token 三个认证
-        # 'rest_framework.authentication.SessionAuthentication',
-        # 'rest_framework.authentication.BasicAuthentication',
-        # # 使用token是必须要有下面这句话
-        # 'rest_framework.authentication.TokenAuthentication',
+        # 默认的验证是按照验证列表从上到下的验证
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',  # 基于Json-Web-Token的验证
+        'rest_framework.authentication.SessionAuthentication',  # 基于session机制会话验证
+        'rest_framework.authentication.BasicAuthentication',  # 账号密码登陆验证,一般只使用于测试
+        'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -195,3 +176,37 @@ REST_FRAMEWORK = {
 #         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
 #     },
 # ]
+
+
+# swagger 配置项
+SWAGGER_SETTINGS = {
+    # 基础样式
+    'SECURITY_DEFINITIONS': {
+        "basic": {
+            'type': 'basic'
+        }
+    },
+    # 如果需要登录才能够查看接口文档, 登录的链接使用restframework自带的(需要在urls.py中加上r'^api-auth/'的url)
+    # 目前加了REST_FRAMEWORK的配置，swagger就无法进行登录了，不知道为何???
+    'LOGIN_URL': 'rest_framework:login',
+    'LOGOUT_URL': 'rest_framework:logout',
+    # 'DOC_EXPANSION': None,
+    # 'SHOW_REQUEST_HEADERS':True,
+    # 'USE_SESSION_AUTH': True,
+    # 'DOC_EXPANSION': 'list',
+    # 接口文档中方法列表以首字母升序排列
+    'APIS_SORTER': 'alpha',
+    # 如果支持json提交, 则接口文档中包含json输入框
+    'JSON_EDITOR': True,
+    # 方法列表字母排序
+    'OPERATIONS_SORTER': 'alpha',
+    'VALIDATOR_URL': None,
+}
+
+# 跨域
+CORS_ORIGIN_WHITELIST = (
+    #'*'
+    '127.0.0.1:8080',# 请求的域名
+    'localhost:8080',
+    'localhost',
+)

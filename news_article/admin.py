@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import *
+from rest_framework.authtoken.admin import TokenAdmin
 
 
 class ArticleAdmin(admin.ModelAdmin):
@@ -14,7 +15,7 @@ class ArticleAdmin(admin.ModelAdmin):
     # 查询字段
     search_fields = ('title', 'tags', 'slug', 'content')
 
-    # 需要加上这个才能在admin后台展示出UEditor这个框，不然js会报错
+    # 需要加上这个才能在admin后台展示出UEditor这个框，不然js就无法引入，会报错
     class Media:
         js = ('/static/ueditor/ueditor.config.js', '/static/ueditor/ueditor.all.min.js',)
 
@@ -40,6 +41,9 @@ class ItemAdmin(admin.ModelAdmin):
 class AdAdmin(admin.ModelAdmin):
     list_display = ('title', 'pic', 'adurl', 'adlocation', 'status')
 
+
+# 使得token在后台能创建
+TokenAdmin.raw_id_fields = ('user',)
 
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Item, ItemAdmin)

@@ -149,7 +149,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 # 用户登录
 class UserLoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True, max_length=100)
-    password = serializers.CharField(required=True, max_length=100)
+    password = serializers.CharField(required=True, max_length=100, write_only=True)  # 不用在接口中返回给用户，所以设置了write_only=True
     token = serializers.CharField(required=False, max_length=1024)
 
     def validate(self, attrs):

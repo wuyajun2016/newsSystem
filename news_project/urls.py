@@ -17,11 +17,15 @@ from django.contrib import admin
 from django.urls import path, re_path
 from django.conf.urls import include, url
 from rest_framework_swagger.views import get_swagger_view
+from rest_framework_jwt.views import obtain_jwt_token
+from rest_framework.authtoken import views
 
 schema_view = get_swagger_view(title="news api")
 urlpatterns = [
     path('admin/', admin.site.urls),
     re_path('^docs/$', schema_view),  # swagger路由:ip/docs
     url(r'', include('news_article.urls')),  # 让diango能够找到应用的url
-    url(r'^api-auth/', include('rest_framework.urls')),  # api权限认证，增加登录的功能
+    url(r'^api-auth/', include('rest_framework.urls',  namespace='rest_framework')),  # api权限认证，增加登录的功能
+    # url(r'^api-token-auth/', obtain_jwt_token),  # jwt（这个可以正常使用，且settings配置后token可带过期时间）
+    url(r'^api-token-auth/', views.obtain_auth_token),  # token,还没调试好（请求中带上了token了还是返回没授权）
 ]

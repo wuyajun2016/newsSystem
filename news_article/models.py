@@ -31,7 +31,7 @@ class Item(models.Model):
         return self.title
 
     class Meta:
-        ordering = ['title']
+        ordering = ['title']  # 默认排序方式根据title去排序
         verbose_name = '新闻子栏目'
         verbose_name_plural = verbose_name
 
@@ -73,6 +73,7 @@ class Article(models.Model):
         return self.title
 
     class Meta:
+        ordering = ['id']
         verbose_name = '新闻文章'
         verbose_name_plural = verbose_name
 
