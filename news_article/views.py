@@ -19,6 +19,8 @@ from .permissions import IsOwnerOrReadOnly
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    # authentication_classes = (TokenAuthentication, SessionAuthentication)  # settings中配置了全局的，这个就不需要配置了
+    permission_classes = (IsOwnerOrReadOnly,)  # 加上这句后，就不会去读取settings中的配置，使用这里的配置
     lookup_field = "id"
 
 
@@ -105,8 +107,8 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserRegisterSerializer
 
         return UserDetailSerializer
-    # 认证策略属性(貌似没啥用，有待考究...???)
     # authentication_classes = (TokenAuthentication, SessionAuthentication)
+    # 要走到这一句，那么后面的get_permissions方法不能存在，不然会使用get_permissions方法（这句和后面get_permissions都不写就走全局）
     # permission_classes = (permissions.IsAuthenticated, IsOwnerOrReadOnly)
 
     def get_queryset(self):
@@ -122,6 +124,7 @@ class UserViewSet(viewsets.ModelViewSet):
             queryset = users
         return queryset
 
+    # 重写认证
     def get_permissions(self):
         if self.action == "retrieve":
             return [permissions.IsAuthenticated()]

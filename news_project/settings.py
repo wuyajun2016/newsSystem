@@ -149,10 +149,10 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 默认的验证是按照验证列表从上到下的验证
-        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',  # 基于Json-Web-Token的验证
-        'rest_framework.authentication.SessionAuthentication',  # 基于session机制会话验证
-        'rest_framework.authentication.BasicAuthentication',  # 账号密码登陆验证,一般只使用于测试
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',  # 基于Json-Web-Token的验证(urls.py配置对应路由）
+        'rest_framework.authentication.SessionAuthentication',  # 基于session机制会话验证(还没测试过)
+        'rest_framework.authentication.BasicAuthentication',  # 账号密码登陆验证,一般只使用于测试（还没测试过）
+        'rest_framework.authentication.TokenAuthentication',  # 基于token(跟jwt token区别是，这个不带过期时间，还是jwt还用，都需urls.py配置对应路由)
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -187,7 +187,7 @@ SWAGGER_SETTINGS = {
         }
     },
     # 如果需要登录才能够查看接口文档, 登录的链接使用restframework自带的(需要在urls.py中加上r'^api-auth/'的url)
-    # 目前加了REST_FRAMEWORK的配置，swagger就无法进行登录了，不知道为何???
+    # 目前加了REST_FRAMEWORK的配置，swagger就无法进行登录了，不知道为何(需要将SessionAuthentication打开才能登录,这个是专门测试用得)
     'LOGIN_URL': 'rest_framework:login',
     'LOGOUT_URL': 'rest_framework:logout',
     # 'DOC_EXPANSION': None,

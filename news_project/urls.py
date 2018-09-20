@@ -25,7 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     re_path('^docs/$', schema_view),  # swagger路由:ip/docs
     url(r'', include('news_article.urls')),  # 让diango能够找到应用的url
-    url(r'^api-auth/', include('rest_framework.urls',  namespace='rest_framework')),  # api权限认证，增加登录的功能
-    # url(r'^api-token-auth/', obtain_jwt_token),  # jwt（这个可以正常使用，且settings配置后token可带过期时间）
-    url(r'^api-token-auth/', views.obtain_auth_token),  # token,还没调试好（请求中带上了token了还是返回没授权）
+    url(r'^api-auth/', include('rest_framework.urls')),  # api权限认证，增加登录的功能
+    # url(r'^api-token-auth/', obtain_jwt_token),  # jwt（settings配置后token可带过期时间）
+    url(r'^api-token-auth/', views.obtain_auth_token),  # token(这个不带过期时间)
 ]
