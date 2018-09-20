@@ -155,10 +155,10 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',  # 基于token(跟jwt token区别是，这个不带过期时间，还是jwt还用，都需urls.py配置对应路由)
     ),
     'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.JSONRenderer',  # 设置返回类型是json
     ),
     'DEFAULT_PARSER_CLASSES': (
-        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.JSONParser',  # 只允许具有JSON内容的请求
     )
 }
 

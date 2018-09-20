@@ -13,6 +13,8 @@ from rest_framework.compat import authenticate
 
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)  # 让password不要输出
+
     class Meta:
         model = User
         fields = "__all__"
@@ -127,14 +129,14 @@ class AdSerializer(serializers.ModelSerializer):
 
 # 用户详情序列化
 class UserDetailSerializer(serializers.ModelSerializer):
-    token = serializers.CharField(required=False, max_length=1024)
+    token = serializers.CharField(required=False, max_length=1024,write_only=True)
 
     class Meta:
         model = User
         fields = "__all__"
 
 
-# 用户注册
+# 用户注册(验证方式1：UniqueValidator)
 class UserRegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(label="用户名", help_text="用户名", required=True, allow_blank=False,
                                      validators=[UniqueValidator(queryset=User.objects.all(), message="用户已经存在")])
@@ -146,7 +148,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'password')
 
 
-# 用户登录
+# 用户登录(验证方式2：重写validate)
 class UserLoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True, max_length=100)
     password = serializers.CharField(required=True, max_length=100, write_only=True)  # 不用在接口中返回给用户，所以设置了write_only=True
@@ -195,11 +197,11 @@ class UserSetPasswordSerializer(serializers.ModelSerializer):
         fields = ('username', 'password', 'newpassword')
 
 
-# 用户收藏
+# 用户收藏(验证方式3：UniqueTogetherValidator)
+# 这里还有一个知识点：CurrentUserDefault，这个不需要用户(前端)上传
 class UserFavSerializer(serializers.ModelSerializer):
     # 有时候前端不需要传一个或多个字段，这些字段值是直接根据用户登录信息判断自动赋值的
-    # 目前貌似通过swagger登录，无法拿到登录用户，暂且注释掉
-    # user = serializers.HiddenField(default=serializers.CurrentUserDefault)
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault)
 
     class Meta:
         model = UserFav
@@ -210,7 +212,7 @@ class UserFavSerializer(serializers.ModelSerializer):
                 message="已经收藏"
             )
         ]
-        fields = "__all__"
-        # fields = ('user', 'articles', 'id')  # 貌似只设置展示这么几个字段的话，Swagger中无法进行post请求
+        # fields = "__all__"
+        fields = ('user', 'articles', 'id')
 
 

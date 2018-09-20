@@ -12,15 +12,16 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from .mypage import ArticlePagination
-from .myfilter import ArticleFilter
+from .myfilter import ArticleFilter, UserFilter
 from .permissions import IsOwnerOrReadOnly
+import datetime
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     # authentication_classes = (TokenAuthentication, SessionAuthentication)  # settings中配置了全局的，这个就不需要配置了
-    permission_classes = (IsOwnerOrReadOnly,)  # 加上这句后，就不会去读取settings中的配置，使用这里的配置
+    # permission_classes = (IsOwnerOrReadOnly,)  # 加上这句后，就不会去读取settings中的配置，使用这里的配置
     lookup_field = "id"
 
 
@@ -77,11 +78,15 @@ class TagViewSet(viewsets.ModelViewSet):
 class ArticleViewSet(viewsets.ModelViewSet):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
+    # 分页
     pagination_class = ArticlePagination
     # 自定义查询 ArticleFilter
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    # 首先filter_backends中配上DjangoFilterBackend
     filter_class = ArticleFilter
+    # 首先filter_backends中配上filters.SearchFilter，另外查询外键关联的字段，使用item__title这样的方式
     search_fields = ('title', 'item__title', 'tags__name')
+    # 首先filter_backends中配上filters.OrderingFilter
     ordering_fields = ('id', 'publish_date')
 
     lookup_field = "id"
@@ -97,9 +102,9 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
 # 用户注册、查询
 class UserViewSet(viewsets.ModelViewSet):
-    # queryset = User.objects.all()
-    # serializer_class = UserSerializer
-    # serializer_class = UserDetailSerializer  # UserDetailSerializer貌似和UserSerializer返回一样，都是没有token
+    queryset = User.objects.all()
+
+    # 重写返回的序列化类
     def get_serializer_class(self):
         if self.action == "retrieve":
             return UserDetailSerializer
@@ -109,22 +114,26 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserDetailSerializer
     # authentication_classes = (TokenAuthentication, SessionAuthentication)
     # 要走到这一句，那么后面的get_permissions方法不能存在，不然会使用get_permissions方法（这句和后面get_permissions都不写就走全局）
+    # 另外，如果要控制某个post/get等请求的权限，就使用自定义的permissions或则重写下get_permissions方法
     # permission_classes = (permissions.IsAuthenticated, IsOwnerOrReadOnly)
 
-    def get_queryset(self):
-        users = User.objects.filter(id=self.request.user.id)
-        if users:
-            for user in users:
-                issuperuser = user.is_superuser
-            if issuperuser:
-                queryset = User.objects.all()
-            else:
-                queryset = users
-        else:
-            queryset = users
-        return queryset
+    filter_backends = (UserFilter,)
 
-    # 重写认证
+    # 使用filter_backends = (UserFilter,)跟下面的方式是一样的
+    # def get_queryset(self):
+    #     users = User.objects.filter(id=self.request.user.id)
+    #     if users:
+    #         for user in users:
+    #             issuperuser = user.is_superuser
+    #         if issuperuser:
+    #             queryset = User.objects.all()
+    #         else:
+    #             queryset = users
+    #     else:
+    #         queryset = users
+    #     return queryset
+
+    # 重写认证(这样就会使得全局的认证失效，读取这里的认证了)
     def get_permissions(self):
         if self.action == "retrieve":
             return [permissions.IsAuthenticated()]
@@ -142,10 +151,11 @@ class UserViewSet(viewsets.ModelViewSet):
         # 给密码加密
         user.set_password(passwd)
         user.save()
-        re_dict = serializer.data
+        # re_dict = serializer.data
         # 查询和创建token
         token = Token.objects.get_or_create(user=user)
 
+        # 试了下，这里的反序列化可以不需要，返回这样的也没用，因为UserRegisterSerializer中fields不带id和token
         serializer = UserRegisterSerializer({'id': user.id, 'username': user.username, 'token': token[0]})
         serializer.data["status"] = HTTP_201_CREATED
         # headers = self.get_success_headers(serializer.data)
@@ -165,12 +175,20 @@ class UserLoginViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         if serializer.is_valid(raise_exception=True):
             user = serializer.validated_data['user']
             # 登录时，创建新的token
-            tokenobj = Token.objects.update_or_create(user=user)
+            token, created = Token.objects.update_or_create(user=user)
+            time_now = datetime.datetime.now()
+            if created or token.created < time_now - datetime.timedelta(minutes=1):
+                token.delete()
+                token = Token.objects.create(user=serializer.validated_data['user'])
+                token.created = time_now
+                token.save()
             token = Token.objects.get(user=user)
-            # 重构返回数据
+            # 重构返回数据1
             serializer = UserLoginSerializer(
                 {'username': user.username, 'id': user.id, 'token': token.key})
             return Response(serializer.data, status=HTTP_200_OK)
+        # 也可以不用重构返回数据，直接返回一个json就可以了2
+        # return Response({'id': user.id, 'username': user.username, 'token': token.key}, status=HTTP_200_OK)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     # 这个目前没有，这里只是post，没有用到查询
