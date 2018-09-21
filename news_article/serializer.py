@@ -152,7 +152,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class UserLoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True, max_length=100)
     password = serializers.CharField(required=True, max_length=100, write_only=True)  # 不用在接口中返回给用户，所以设置了write_only=True
-    token = serializers.CharField(required=False, max_length=1024)
+    token = serializers.CharField(required=False, max_length=1024, read_only=True)  # 只应该包含在输出中，任何输入字段（创建和更新）中包含该属性都会被忽略
 
     def validate(self, attrs):
         username = attrs.get('username')
@@ -201,7 +201,7 @@ class UserSetPasswordSerializer(serializers.ModelSerializer):
 # 这里还有一个知识点：CurrentUserDefault，这个不需要用户(前端)上传
 class UserFavSerializer(serializers.ModelSerializer):
     # 有时候前端不需要传一个或多个字段，这些字段值是直接根据用户登录信息判断自动赋值的
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault)
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = UserFav

@@ -15,10 +15,13 @@ from .mypage import ArticlePagination
 from .myfilter import ArticleFilter, UserFilter
 from .permissions import IsOwnerOrReadOnly
 import datetime
+import json
+from django.shortcuts import get_object_or_404 as _get_object_or_404
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
+    # queryset = Category.objects.all()  # 模型查询API
+    queryset = Category.objects.raw('select * from news_article_category')  # 使用raw
     serializer_class = CategorySerializer
     # authentication_classes = (TokenAuthentication, SessionAuthentication)  # settings中配置了全局的，这个就不需要配置了
     # permission_classes = (IsOwnerOrReadOnly,)  # 加上这句后，就不会去读取settings中的配置，使用这里的配置
@@ -191,9 +194,9 @@ class UserLoginViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         # return Response({'id': user.id, 'username': user.username, 'token': token.key}, status=HTTP_200_OK)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
-    # 这个目前没有，这里只是post，没有用到查询
-    def get_object(self):
-        return self.request.user
+    # 这个目前没有，这里只是post，没有用到查询（不知道原来添加这个是何意）
+    # def get_object(self):
+    #     return self.request.user
 
 
 class AdViewSet(viewsets.ModelViewSet):
@@ -217,6 +220,35 @@ class UserSetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
-class UserFavViewSet(viewsets.ModelViewSet):
-    queryset = UserFav.objects.all()
+class UserFavViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin,
+                     mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    # queryset = UserFav.objects.all()
     serializer_class = UserFavSerializer
+
+    # 重写get_queryset（ListModelMixin是直接将这个queryset序列化然后返回，不会像RetrieveModelMixin一样执行get_object方法：先根据主键去查询出记录）
+    def get_queryset(self):
+        if self.request.user and self.request.user.is_authenticated:
+            queryset = UserFav.objects.filter(user=self.request.user)
+        else:
+            queryset = []
+        return queryset
+    lookup_field = 'articles_id'
+    # 如果用RetrieveModelMixin，那么需要重写下获取对象方法，’将默认的根据pk去查询‘改成‘根据用户id去查询’
+    # 当然最简单的方法是定义：lookup_field = 'articles_id'
+    # def get_object(self):
+    #     queryset = self.filter_queryset(self.get_queryset())
+    #     filter_kwargs = {"user_id": self.request.user.id}
+    #     obj = _get_object_or_404(queryset, **filter_kwargs)
+    #     return obj
+
+    # 重写create
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        articleid = request.data['articles']
+        userid = self.request.user.id
+        userfav = UserFav.objects.get_or_create(articles_id=articleid, user_id=userid)
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=HTTP_201_CREATED, headers=headers)
