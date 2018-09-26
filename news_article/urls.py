@@ -1,6 +1,8 @@
 from django.conf.urls import url, include
 from . import views
 from rest_framework.routers import DefaultRouter
+from django.conf import settings
+from django.views.static import serve
 
 
 # ViewSet使用了以下这种方式去定义路由
@@ -21,6 +23,8 @@ router.register(r'categoryPrimaryKeyitems', views.CategoryPrimaryKeyViewSet, bas
 router.register(r'categorySlugitems', views.CategorySlugViewSet, base_name="categorySlugitems")
 router.register(r'userLogin', views.UserLoginViewSet, base_name="userLogin")
 router.register(r'setPassword', views.UserSetPasswordViewSet, base_name="setPassword")
+router.register(r'hot_articleList', views.HotArticleListViewSet, base_name="hot_articleList")
 urlpatterns = [
-    url(r'^', include(router.urls))
+    url(r'^', include(router.urls)),
+    url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),  # django上传图片
 ]

@@ -132,8 +132,7 @@ USE_TZ = False     # 使用mysql的话，需要把这个改成FALSE，不然根�
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
-
-
+MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace('\\', '/')   # django上传图片，需要加上
 
 # token失效时间
@@ -145,7 +144,7 @@ JWT_AUTH = {
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         # 这句话能够使认证生效，否则直接请求就回返回结果
-        'rest_framework.permissions.IsAuthenticated',
+        # 'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 默认的验证是按照验证列表从上到下的验证
@@ -188,10 +187,33 @@ SWAGGER_SETTINGS = {
     'VALIDATOR_URL': None,
 }
 
-# 跨域
+#跨域增加忽略
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = (
-    #'*'
-    '127.0.0.1:8080',# 请求的域名
-    'localhost:8080',
-    'localhost',
+    '*'
+)
+
+CORS_ALLOW_METHODS = (
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+    'VIEW',
+)
+
+CORS_ALLOW_HEADERS = (
+    'XMLHttpRequest',
+    'X_FILENAME',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'Pragma',
 )

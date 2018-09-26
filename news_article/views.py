@@ -20,8 +20,8 @@ from django.shortcuts import get_object_or_404 as _get_object_or_404
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    # queryset = Category.objects.all()  # 模型查询API
-    queryset = Category.objects.raw('select * from news_article_category')  # 使用raw
+    queryset = Category.objects.all()  # 模型查询API
+    # queryset = Category.objects.raw('select id as id,title as title from news_article_category')  # 使用raw
     serializer_class = CategorySerializer
     # authentication_classes = (TokenAuthentication, SessionAuthentication)  # settings中配置了全局的，这个就不需要配置了
     # permission_classes = (IsOwnerOrReadOnly,)  # 加上这句后，就不会去读取settings中的配置，使用这里的配置
@@ -101,6 +101,14 @@ class ArticleViewSet(viewsets.ModelViewSet):
         instance.save()
         serializer = self.get_serializer(instance)  # 找到article的序列化类进行序列化
         return Response(serializer.data)
+
+
+# 热门文章
+class HotArticleListViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    queryset = Article.objects.filter(is_active=True)[:10]
+    serializer_class = ArticleSerializer
+    ordering_fields = ('-id',)
+    lookup_field = "id"
 
 
 # 用户注册、查询
