@@ -73,7 +73,7 @@ class Article(models.Model):
         return self.title
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-id']
         verbose_name = '新闻文章'
         verbose_name_plural = verbose_name
 

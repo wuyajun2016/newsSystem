@@ -34,11 +34,11 @@ class ItemViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.OrderingFilter,)
     ordering_fields = ('-id',)  # 如果是降序前面加个‘-’
     # 搜索(可根据search_fields里面的配置字段进行查询)
-    # filter_backends = (filters.SearchFilter,)
-    # search_fields = ('title', 'categorys__title',)
+    filter_backends = (DjangoFilterBackend,filters.SearchFilter,)
+    search_fields = ('title', 'categorys__id',)
     # 过滤（可根据title、外键title分别进行查询，精确查询）
     # filter_backends = (DjangoFilterBackend,)
-    # filter_fields = ('title', 'categorys__title')
+    filter_fields = ('title', 'categorys__id',)
 
     serializer_class = ItemSerializer
     # get等方法时候使用id去查询（默认就id，所以下面这句可以不写）
@@ -105,7 +105,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
 # 热门文章
 class HotArticleListViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    queryset = Article.objects.filter(is_active=True)[:10]
+    queryset = Article.objects.filter(is_active=True)[:5]
     serializer_class = ArticleSerializer
     ordering_fields = ('-id',)
     lookup_field = "id"
