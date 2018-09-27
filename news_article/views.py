@@ -156,7 +156,7 @@ class UserViewSet(viewsets.ModelViewSet):
     # 重写create方法,给密码加密，并查询和创建token
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(raise_exception=True)  # is_valid会检查必填字段，如果serializer.py中定义了相关校验就会去验证
         passwd = request.data['password']
         user = self.perform_create(serializer)
         # 给密码加密
@@ -166,7 +166,7 @@ class UserViewSet(viewsets.ModelViewSet):
         # 查询和创建token
         token = Token.objects.get_or_create(user=user)
 
-        # 试了下，这里的反序列化可以不需要，返回这样的也没用，因为UserRegisterSerializer中fields不带id和token
+        # 如果UserRegisterSerializer中fields设置的是'__all__'，那么这里需要把必传的都传入（主要是user model中必传的），不然序列化会报错
         serializer = UserRegisterSerializer({'id': user.id, 'username': user.username, 'token': token[0]})
         serializer.data["status"] = HTTP_201_CREATED
         # headers = self.get_success_headers(serializer.data)
@@ -194,7 +194,7 @@ class UserLoginViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
                 token.created = time_now
                 token.save()
             token = Token.objects.get(user=user)
-            # 重构返回数据1
+            # 重构返回数据(反序列化一下)1
             serializer = UserLoginSerializer(
                 {'username': user.username, 'id': user.id, 'token': token.key})
             return Response(serializer.data, status=HTTP_200_OK)
@@ -256,6 +256,10 @@ class UserFavViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retr
 
         articleid = request.data['articles']
         userid = self.request.user.id
+        if not userid:
+            userid = request.data['user']
+        else:
+            userid = self.request.user.id
         userfav = UserFav.objects.get_or_create(articles_id=articleid, user_id=userid)
 
         headers = self.get_success_headers(serializer.data)

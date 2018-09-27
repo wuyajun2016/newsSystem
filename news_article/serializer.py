@@ -99,6 +99,8 @@ class ItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
+        # 也可以只定义model中的部分字段，这样的话入参就是fields中定义的字段（必填字段必须定义；我们mixin方法中需要涉及存储的需定义下）
+        # fields = ('title', 'categorys')
         fields = "__all__"
 
 
@@ -129,7 +131,8 @@ class AdSerializer(serializers.ModelSerializer):
 
 # 用户详情序列化
 class UserDetailSerializer(serializers.ModelSerializer):
-    token = serializers.CharField(required=False, max_length=1024,write_only=True)
+    # token = serializers.CharField(required=False, max_length=1024,write_only=True)
+    password = serializers.CharField(write_only=True)  # 控制password不要输出给用户
 
     class Meta:
         model = User
@@ -138,6 +141,9 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
 # 用户注册(验证方式1：UniqueValidator)
 class UserRegisterSerializer(serializers.ModelSerializer):
+    # 以下得username、password都是入参,同时也是出参
+    # 如果fields不指定，应当是默认model中的全部参数(user model中入参必填的参数都必须传过来)
+    # 定义的username、password等值都是model中带有的字段
     username = serializers.CharField(label="用户名", help_text="用户名", required=True, allow_blank=False,
                                      validators=[UniqueValidator(queryset=User.objects.all(), message="用户已经存在")])
     password = serializers.CharField(style={'input_type': 'password'}, help_text="密码", label="密码", write_only=True)
@@ -150,6 +156,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 # 用户登录(验证方式2：重写validate)
 class UserLoginSerializer(serializers.ModelSerializer):
+    # username、password都是入参（token被标记了read_only因此不需要入参），出参username、password、token(如果view中没有值传入出参就不展示该字段了)
     username = serializers.CharField(required=True, max_length=100)
     password = serializers.CharField(required=True, max_length=100, write_only=True)  # 不用在接口中返回给用户，所以设置了write_only=True
     token = serializers.CharField(required=False, max_length=1024, read_only=True)  # 只应该包含在输出中，任何输入字段（创建和更新）中包含该属性都会被忽略
